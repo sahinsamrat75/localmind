@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Local databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/
+
+# Model caches (the bundled model lives in models/ and IS committed;
+# transformers.js runtime caches should not be)
+.cache/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
