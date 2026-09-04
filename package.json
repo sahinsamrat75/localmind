@@ -1,7 +1,7 @@
 {
   "name": "localmind",
-  "version": "0.1.0",
-  "description": "Local-first semantic memory server for AI agents. An MCP server that stores and recalls memories entirely on your machine — no API keys, no cloud.",
+  "version": "0.2.0",
+  "description": "Local-first semantic memory server for AI agents. An MCP server that stores and recalls memories entirely on your machine — including codebase-scale ingestion with HNSW vector search. No API keys, no cloud.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,7 +18,14 @@
     "build": "tsc",
     "prepare": "npm run build",
     "start": "node dist/cli.js",
-    "test": "npm run build && node test/smoke-test.mjs"
+    "test": "npm run build && node test/smoke-test.mjs",
+    "test:isolation": "node test/isolation-test.mjs",
+    "test:migration": "node test/migration-test.mjs",
+    "test:chunker": "node test/chunker-test.mjs",
+    "test:incremental": "node test/incremental-test.mjs",
+    "test:budget": "node test/token-budget-test.mjs",
+    "test:all": "npm run build && node test/smoke-test.mjs && node test/isolation-test.mjs && node test/migration-test.mjs && node test/chunker-test.mjs && node test/incremental-test.mjs && node test/token-budget-test.mjs",
+    "benchmark": "node test/benchmark.mjs"
   },
   "keywords": [
     "mcp",
