@@ -84,9 +84,13 @@ try {
     query: "What groceries must I avoid buying when cooking for my friend?",
   });
   console.log("  recall output:\n" + recallOut.split("\n").map((l) => "    " + l).join("\n"));
-  const firstLine = recallOut.split("\n")[0] ?? "";
+  // v2 recall prefixes its output with a summary line starting '#'; the ranked
+  // hits start on the next line.
+  const recallLines = recallOut.split("\n").filter((l) => l.trim() && !l.startsWith("#"));
+  const firstLine = recallLines[0] ?? "";
+  assert(recallLines.length <= 5, `recall honours the default limit of 5 (${recallLines.length} hits)`);
   assert(firstLine.includes(`[${id2}]`), `top-ranked result is the allergy memory (id=${id2})`);
-  const allergyScore = Number(firstLine.match(/score=([\d.]+)/)?.[1]);
+  const allergyScore = Number(firstLine.match(/score=([-\d.]+)/)?.[1]);
   assert(Number.isFinite(allergyScore) && allergyScore > 0.3, `allergy memory scored high (${allergyScore})`);
 
 
@@ -118,7 +122,8 @@ try {
     "tag filter returns only memories tagged 'health'");
 
   const limitOut = await callTool("list_memories", { limit: 1 });
-  assert(limitOut.split("\n").filter((l) => l.trim()).length === 1, "limit=1 returns exactly one memory");
+  const limitRows = limitOut.split("\n").filter((l) => /^\[\d+\]/.test(l));
+  assert(limitRows.length === 1, `limit=1 returns exactly one memory (${limitRows.length})`);
 } catch (err) {
   failures++;
   console.error("\nUNEXPECTED ERROR:", err);
