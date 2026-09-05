@@ -75,7 +75,11 @@ function goFile(service, idx, rnd) {
     const fn = `${verb}${name}${idx}${f}`;
     out += `// ${fn} handles ${topic} for the ${service} service.\n`;
     out += `func ${fn}(ctx context.Context, req *Request) (*Response, error) {\n`;
-    for (let l = 0; l < 6; l++) out += `\tresp := transform${f}(ctx, req, "step ${l} of ${topic}")\n`;
+    for (let l = 0; l < 6; l++) {
+      // Include the function name and line in the body so synthetic functions
+      // are textually distinct — real code is not this repetitive.
+      out += `\tresp := ${fn}(ctx, req, "stage ${l} of ${topic} in ${service}")\n`;
+    }
     out += `\treturn resp, nil\n}\n\n`;
   }
   return { path: `services/${service}/handler_${idx}.go`, content: out, funcs: FUNCS_PER_FILE, topic };
@@ -88,8 +92,8 @@ function tsFile(service, idx, rnd) {
   for (let f = 0; f < FUNCS_PER_FILE; f++) {
     const fn = `get${name}${idx}${f}`;
     out += `export async function ${fn}(input: RequestInput): Promise<Response> {\n`;
-    out += `  // ${topic} path\n`;
-    for (let l = 0; l < 5; l++) out += `  const v${l} = await decode(input, "${service}", ${l});\n`;
+    out += `  // ${topic} path in ${service}\n`;
+    for (let l = 0; l < 5; l++) out += `  const v${l} = await decode(input, "${fn}", ${l}, "${service}");\n`;
     out += `  return serialize(v4);\n}\n\n`;
   }
   return { path: `web/${service}/api_${idx}.ts`, content: out, funcs: FUNCS_PER_FILE, topic };
@@ -101,8 +105,8 @@ function pyFile(service, idx, rnd) {
   let out = `"""${service} ${topic} utilities."""\nimport asyncio\n\n`;
   for (let f = 0; f < FUNCS_PER_FILE; f++) {
     const fn = `${name.toLowerCase()}_${topic.split(" ")[0]}_${idx}_${f}`;
-    out += `def ${fn}(ctx, req):\n    """Process ${topic}."""\n`;
-    for (let l = 0; l < 5; l++) out += `    value${l} = transform(ctx, req, ${l})\n`;
+    out += `def ${fn}(ctx, req):\n    """Process ${topic} for ${service}."""\n`;
+    for (let l = 0; l < 5; l++) out += `    value${l} = transform(ctx, req, ${l}, "${fn}")\n`;
     out += `    return value4\n\n\n`;
   }
   return { path: `tools/${service}/${name.toLowerCase()}_${idx}.py`, content: out, funcs: FUNCS_PER_FILE, topic };
@@ -233,6 +237,13 @@ let index = new VectorIndex({
   vectors: (p) => store.embeddingsForProject(p),
   log: (m) => console.log(`  [index] ${m}`),
 });
+
+// Sample RSS in the background so we report a real peak, not just the final value.
+let peakRss = rss();
+const sampler = setInterval(() => {
+  peakRss = Math.max(peakRss, rss());
+}, 250);
+sampler.unref?.();
 
 console.log("\n[2] cold ingestion (embed + index, per project)");
 for (const group of allFiles) {
@@ -427,11 +438,12 @@ row("hnsw index files", bytes(indexBytes));
 row("total localmind data", bytes(dbBytes + walBytes + indexBytes));
 row("bytes per stored chunk", (((dbBytes + walBytes + indexBytes) / totalChunks) / 1024).toFixed(1) + " KiB");
 row("rss with all indexes loaded", bytes(rss()));
-row("peak rss", bytes(process.memoryUsage().heapTotal + (rss() - process.memoryUsage().heapTotal)));
+row("peak rss during run", bytes(peakRss));
 results.footprint.dbBytes = dbBytes + walBytes;
 results.footprint.indexBytes = indexBytes;
 results.footprint.totalChunks = totalChunks;
 results.footprint.rssBytes = rss();
+results.footprint.peakRssBytes = peakRss;
 results.footprint.perProject = idxStats.map((s) => ({ project: s.project, bytes: s.bytes, live: s.live }));
 
 index3.close();
@@ -461,7 +473,5 @@ if (!KEEP) {
 } else {
   console.log(`kept: ${REPO_ROOT}\nkept: ${HOME}`);
 }
-process.exit(pass ? 0 : 1);
-
-
 row("rss after ingestion", bytes(rss()));
+process.exit(pass ? 0 : 1);

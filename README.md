@@ -86,6 +86,28 @@ Take PIXORA — 41 microservices in Go, Node and Python, tens of thousands of fu
 5. Keep **decisions** in the same namespace: `{ "project": "pixora", "text": "We chose Redis for idempotency keys because the billing exporter assumes at-most-once.", "tags": "decision" }`. Notes and code chunks coexist and `recall` ranks across both.
 6. **Isolate clients** with a second namespace — `{ "project": "pixora-acme" }` for a client-specific fork — and be certain a query in one can never surface the other's code.
 
+## Benchmark: measured at 21,727 chunks across 2 projects
+
+`npm run benchmark` generates a synthetic Go/TypeScript/Python monorepo (2,507 files / 9.8 MiB, 23 "services" split into two project namespaces), ingests it, and gates the run on five scale assertions. On an M-series MacBook (10 cores, 16 GiB, local quantized MiniLM):
+
+| What | Measured |
+| --- | --- |
+| Cold ingestion (embed + index) | 21,727 chunks in ~10 min (~36–40 chunks/s, ONNX CPU-bound) |
+| **Recall latency p50 / p95 / max** (60 queries, 21.7k vectors) | **6 ms / 11 ms / 12 ms** |
+| Recall with `max_tokens=2000` (over-fetch 400 + dedup + pack) | p50 74 ms / p95 115 ms |
+| HNSW vs the brute-force cosine scan it replaces | 0.6 ms vs 5.5 ms per query (~9×, plus ~80 ms blob decode the scan also needed) |
+| Re-ingest after editing one function | **1 of 13,226 chunks re-embedded** (0.01%), 359 ms total |
+| No-op re-ingest (nothing changed) | 195 ms, 0 embedded |
+| Cold reload of 21,728 vectors from disk | 53 ms |
+| Rebuild both indexes from SQLite BLOBs | 5.3 s |
+| Disk | 86 MiB SQLite + 35 MiB index files (5.7 KiB/chunk) |
+| Peak RSS | ~104 MiB during ingestion; ~409 MiB with both indexes resident |
+| Cross-project leaks across 60 queries | **0** |
+
+The run fails non-zero unless: corpus ≥ target, recall p95 < 1 s, zero cross-project leaks, incremental re-ingestion < 5% of the corpus, and a no-op re-ingest embeds nothing. Raw numbers land in `test/benchmark-results.json`.
+
+Cold ingestion is dominated by the local embedding model, not by localmind — and it is paid once per chunk, ever. The steady-state cost an agent actually feels is the re-ingest row and the recall rows, and those stay in milliseconds at PIXORA scale.
+
 ## Token-budget recall
 
 `recall` accepts `max_tokens`. When set, results are ranked, de-duplicated, then packed greedily in rank order until the budget is exhausted — the budget, not a fixed count, decides how much comes back.

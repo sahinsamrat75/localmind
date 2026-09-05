@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "ranAt": "2026-09-05T18:03:40.606Z",
+    "node": "v24.14.0",
+    "platform": "darwin-arm64",
+    "cpus": 10,
+    "totalMemGiB": 16,
+    "targetChunks": 20000,
+    "queries": 60
+  },
+  "generation": {
+    "files": 2507,
+    "expectedChunks": 20056,
+    "sourceBytes": 10248805,
+    "genMs": 165
+  },
+  "ingestion": [
+    {
+      "project": "pixora-core",
+      "files": 1526,
+      "chunks": 13225,
+      "wallMs": 339245,
+      "embedMs": 335004,
+      "chunksPerSec": 39.5,
+      "byLanguage": {
+        "go": 4581,
+        "python": 4572,
+        "ts": 4072
+      }
+    },
+    {
+      "project": "pixora-edge",
+      "files": 981,
+      "chunks": 8502,
+      "wallMs": 254088,
+      "embedMs": 251268,
+      "chunksPerSec": 33.8,
+      "byLanguage": {
+        "go": 2943,
+        "python": 2943,
+        "ts": 2616
+      }
+    }
+  ],
+  "recall": {
+    "queries": 60,
+    "p50Ms": 6,
+    "p95Ms": 11,
+    "p99Ms": 12,
+    "maxMs": 12,
+    "budgetP50Ms": 74,
+    "budgetP95Ms": 115,
+    "avgHits": 10,
+    "crossProjectLeaks": 0,
+    "bruteForceMsPerQuery": 5.5,
+    "annMsPerQuery": 0.6,
+    "bruteForceVectors": 13225
+  },
+  "incremental": {
+    "project": "pixora-core",
+    "embedded": 1,
+    "unchanged": 13225,
+    "total": 13226,
+    "wallMs": 359,
+    "pctReembedded": 0.01,
+    "noopMs": 196,
+    "noopEmbedded": 0
+  },
+  "footprint": {
+    "reloadMs": 53,
+    "reloadedVectors": 21728,
+    "rebuildMs": 5296,
+    "rebuiltVectors": 21728,
+    "dbBytes": 90402816,
+    "indexBytes": 36609911,
+    "totalChunks": 21727,
+    "rssBytes": 428376064,
+    "peakRssBytes": 109510656,
+    "perProject": [
+      {
+        "project": "pixora-core",
+        "bytes": 22284648,
+        "live": 13226
+      },
+      {
+        "project": "pixora-edge",
+        "bytes": 14324936,
+        "live": 8502
+      }
+    ]
+  }
+}
